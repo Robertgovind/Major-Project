@@ -8,6 +8,7 @@ import '../../shared/models/prediction_result.dart';
 class SensorProvider with ChangeNotifier {
   final LiveSensorService _sensorService = LiveSensorService();
   StreamSubscription<LiveSensorReading>? _readingSubscription;
+  bool _isDisposed = false;
 
   SensorData? _currentSensorData;
   PredictionResult? _currentPrediction;
@@ -21,11 +22,13 @@ class SensorProvider with ChangeNotifier {
   bool get isStreaming => _isStreaming;
 
   void startSensorStream() {
-    if (_isStreaming) return;
+    if (_isStreaming || _isDisposed) return;
 
     _isStreaming = true;
     _sensorService.connect();
     _readingSubscription = _sensorService.readingStream.listen((reading) {
+      if (_isDisposed) return;
+
       _currentSensorData = reading.sensorData;
       _sensorHistory.add(reading.sensorData);
 
@@ -34,23 +37,36 @@ class SensorProvider with ChangeNotifier {
       }
 
       _currentPrediction = reading.prediction;
-      notifyListeners();
+      _notifyIfActive();
     });
 
-    notifyListeners();
+    _notifyIfActive();
   }
 
-  void stopSensorStream() {
+  void stopSensorStream({bool notify = true}) {
+    if (!_isStreaming && _readingSubscription == null) return;
+
     _isStreaming = false;
-    _readingSubscription?.cancel();
+    unawaited(_readingSubscription?.cancel());
     _readingSubscription = null;
     _sensorService.disconnect();
-    notifyListeners();
+
+    if (notify) {
+      _notifyIfActive();
+    }
+  }
+
+  void _notifyIfActive() {
+    if (!_isDisposed) {
+      notifyListeners();
+    }
   }
 
   @override
   void dispose() {
-    _readingSubscription?.cancel();
+    _isDisposed = true;
+    unawaited(_readingSubscription?.cancel());
+    _readingSubscription = null;
     _sensorService.dispose();
     super.dispose();
   }

@@ -4,12 +4,11 @@ Simple Node.js backend for live ESP32-style sensor data and ML predictions.
 
 ## Flow
 
-Sensor source -> Backend simulator/ESP32 -> Backend ML -> WebSocket -> Flutter App
+ESP32 sensors -> Backend ML -> WebSocket -> Flutter App
 
-During development, the backend generates sensor readings every few seconds and broadcasts
-them to every Flutter app connected to `/ws`. When the hardware is ready, the ESP32 can
-still send readings using a normal HTTP `POST`; the backend will run the same prediction
-logic and broadcast the integrated result.
+The ESP32 sends real sensor readings using HTTP `POST`. The backend normalizes that
+payload, runs the saved scikit-learn models from `../ML`, and broadcasts the integrated
+sensor + prediction result to every Flutter app connected to `/ws`.
 No MongoDB or database is used.
 
 ## Setup
@@ -17,6 +16,7 @@ No MongoDB or database is used.
 ```bash
 cd backend
 npm install
+python -m pip install -r requirements.txt
 copy .env.example .env
 npm run dev
 ```
@@ -51,18 +51,19 @@ Content-Type: application/json
 x-api-key: change-this-secret
 
 {
-  "deviceId": "esp32-1",
-  "fruitType": "banana",
-  "r": 120,
-  "g": 88,
-  "b": 35,
-  "humidity": 55.4,
-  "temperature": 24.7,
-  "voc": 48.2,
-  "chemicalRipening": 0.42,
-  "timestamp": "2026-05-11T13:30:00.000Z"
+  "Red": 120,
+  "Green": 88,
+  "Blue": 35,
+  "Temperature": 24.7,
+  "Humidity": 55.4,
+  "Pressure": 1008.2,
+  "Gas resistance in (Kohm)": 48.2,
+  "Difference": 4.1,
+  "VOC_percent": 0.42
 }
 ```
+
+The legacy `/predict` endpoint is also available for the existing ESP32 code.
 
 The backend broadcasts this websocket message:
 
@@ -72,21 +73,28 @@ The backend broadcasts this websocket message:
   "data": {
     "sensorData": {
       "deviceId": "esp32-1",
-      "fruitType": "banana",
+      "fruitType": "",
       "r": 120,
       "g": 88,
       "b": 35,
       "humidity": 55.4,
       "temperature": 24.7,
-      "voc": 48.2,
+      "pressure": 1008.2,
+      "gasResistance": 48.2,
+      "difference": 4.1,
+      "vocPercent": 0.42,
+      "voc": 42,
       "chemicalRipening": 0.42,
       "timestamp": "2026-05-11T13:30:00.000Z"
     },
     "prediction": {
       "isNaturalRipening": true,
-      "status": "ripe",
-      "confidence": 0.93,
-      "recommendation": "Fruit is naturally ripened and currently ripe. Recommended for consumption within 2 days."
+      "status": "overripe",
+      "confidence": 0.355,
+      "recommendation": "Fruit is naturally ripened and currently overripe. Consume immediately or discard.",
+      "color": "Yellow",
+      "chemicalUsed": "NO",
+      "ripeness": "Overripe"
     }
   }
 }
@@ -98,4 +106,5 @@ The backend broadcasts this websocket message:
 GET /health
 GET /api/v1/sensor-data/latest
 POST /api/v1/sensor-data
+POST /predict
 ```

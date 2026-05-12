@@ -1,32 +1,87 @@
-const randomBetween = (min, max) => min + Math.random() * (max - min);
+const path = require('path');
+const { spawn } = require('child_process');
 
-const predictFromSensorData = (data) => {
-  const isNatural = data.chemicalRipening < 0.5;
-  const confidence = Number(randomBetween(0.82, 0.98).toFixed(3));
+const scriptPath = path.resolve(__dirname, '../ml/predict.py');
 
-  let status;
-  if (data.voc > 60) {
-    status = 'unripe';
-  } else if (data.voc > 30) {
-    status = 'ripe';
-  } else {
-    status = 'overripe';
-  }
+const runPythonPrediction = (features) =>
+  new Promise((resolve, reject) => {
+    const python = spawn(process.env.PYTHON_BIN || 'python', [scriptPath], {
+      stdio: ['pipe', 'pipe', 'pipe'],
+    });
 
-  let recommendation;
+    let stdout = '';
+    let stderr = '';
+
+    python.stdout.on('data', (chunk) => {
+      stdout += chunk.toString();
+    });
+
+    python.stderr.on('data', (chunk) => {
+      stderr += chunk.toString();
+    });
+
+    python.on('error', reject);
+
+    python.on('close', (code) => {
+      if (code !== 0) {
+        const message = stderr.trim() || `ML process exited with code ${code}.`;
+        reject(new Error(message));
+        return;
+      }
+
+      try {
+        resolve(JSON.parse(stdout));
+      } catch (error) {
+        reject(new Error(`Invalid ML response: ${stdout || error.message}`));
+      }
+    });
+
+    python.stdin.end(JSON.stringify(features));
+  });
+
+const formatStatus = (ripeness) => String(ripeness || 'Unknown').toLowerCase();
+
+const buildRecommendation = ({ ripeness, chemicalUsed }) => {
+  const status = formatStatus(ripeness);
+  const isNatural = chemicalUsed !== 'YES';
+  const method = isNatural ? 'naturally' : 'chemically';
+
   if (status === 'unripe') {
-    recommendation = `Fruit is ${isNatural ? 'naturally' : 'chemically'} ripened and currently unripe. Wait for ripening.`;
-  } else if (status === 'ripe') {
-    recommendation = `Fruit is ${isNatural ? 'naturally' : 'chemically'} ripened and currently ripe. Recommended for consumption within 2 days.`;
-  } else {
-    recommendation = `Fruit is ${isNatural ? 'naturally' : 'chemically'} ripened and currently overripe. Consume immediately or discard.`;
+    return `Fruit is ${method} ripened and currently unripe. Wait for ripening.`;
   }
+
+  if (status === 'ripe') {
+    return `Fruit is ${method} ripened and currently ripe. Recommended for consumption within 2 days.`;
+  }
+
+  if (status === 'overripe') {
+    return `Fruit is ${method} ripened and currently overripe. Consume immediately or discard.`;
+  }
+
+  return `Fruit is ${method} ripened and currently ${status}. Review before consumption.`;
+};
+
+const predictFromSensorData = async (sensorData) => {
+  const result = await runPythonPrediction({
+    Red: sensorData.r,
+    Green: sensorData.g,
+    Blue: sensorData.b,
+    Temperature: sensorData.temperature,
+    Humidity: sensorData.humidity,
+    Pressure: sensorData.pressure,
+    'Gas resistance in (Kohm)': sensorData.gasResistance,
+    Difference: sensorData.difference,
+    VOC_percent: sensorData.vocPercent,
+  });
 
   return {
-    isNaturalRipening: isNatural,
-    status,
-    confidence,
-    recommendation,
+    isNaturalRipening: result.chemicalUsed !== 'YES',
+    status: formatStatus(result.ripeness),
+    confidence: result.confidence,
+    recommendation: buildRecommendation(result),
+    color: result.color,
+    chemicalUsed: result.chemicalUsed,
+    ripeness: result.ripeness,
   };
 };
 

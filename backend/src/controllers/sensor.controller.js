@@ -4,19 +4,23 @@ const {
   broadcastSensorReading,
   getLatestSensorReading,
 } = require("../config/websocketHub");
-const { createSensorReading } = require("../services/sensorSimulator.service");
+const { predictFromSensorData } = require("../services/ml.service");
+const { createSensorReading } = require("../services/sensorReading.service");
 const { sensorDataSchema } = require("../validators/sensor.validator");
 
 const receiveSensorData = asyncHandler(async (req, res) => {
-  const sensorData = sensorDataSchema.parse(req.body);
-  const reading = createSensorReading(sensorData);
+  const reading = await createSensorReading(req.body, predictFromSensorData);
+  const normalizedReading = {
+    ...reading,
+    sensorData: sensorDataSchema.parse(reading.sensorData),
+  };
 
-  broadcastSensorReading(reading);
+  broadcastSensorReading(normalizedReading);
 
   success(
     res,
-    reading,
-    "Sensor reading broadcasted to websocket clients.",
+    normalizedReading,
+    "Sensor reading predicted and broadcasted.",
     201,
   );
 });

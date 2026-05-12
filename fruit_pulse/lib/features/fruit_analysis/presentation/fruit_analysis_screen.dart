@@ -18,19 +18,28 @@ class FruitAnalysisScreen extends StatefulWidget {
 }
 
 class _FruitAnalysisScreenState extends State<FruitAnalysisScreen> {
+  SensorProvider? _sensorProvider;
+
   @override
   void initState() {
     super.initState();
     // Start sensor stream when entering analysis
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<SensorProvider>().startSensorStream();
+      if (!mounted) return;
+      _sensorProvider?.startSensorStream();
     });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _sensorProvider = context.read<SensorProvider>();
   }
 
   @override
   void dispose() {
     // Stop sensor stream when leaving
-    context.read<SensorProvider>().stopSensorStream();
+    _sensorProvider?.stopSensorStream(notify: false);
     super.dispose();
   }
 
@@ -99,7 +108,6 @@ class _FruitAnalysisScreenState extends State<FruitAnalysisScreen> {
     final spots = history.asMap().entries.map((entry) {
       final index = entry.key.toDouble();
       final data = entry.value;
-      print('VOC at index $index: ${data.voc}'); // Debug print
       return FlSpot(index, data.voc);
     }).toList();
 

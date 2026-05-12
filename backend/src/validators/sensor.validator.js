@@ -16,10 +16,14 @@ const sensorDataSchema = z.object({
   b: numericString(z.number().int().min(0).max(255)),
   humidity: numericString(z.number().min(0).max(100)),
   temperature: numericString(z.number().min(-40).max(125)),
+  pressure: numericString(z.number().min(0)).optional(),
+  gasResistance: numericString(z.number().min(0)).optional(),
+  difference: numericString(z.number()).optional(),
+  vocPercent: numericString(z.number().min(0).max(1)).optional(),
   voc: numericString(z.number().min(0).max(100000)),
   chemicalRipening: numericString(z.number().min(0).max(1)),
   timestamp: z.coerce.date().optional().default(() => new Date()),
-});
+}).passthrough();
 
 module.exports = {
   sensorDataSchema,
