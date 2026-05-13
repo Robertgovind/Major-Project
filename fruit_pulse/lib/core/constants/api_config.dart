@@ -11,6 +11,11 @@ class ApiConfig {
     defaultValue: '10.0.2.2',
   );
 
+  static String get baseUrl {
+    final resolvedHost = kIsWeb ? 'localhost' : host;
+    return 'http://$resolvedHost:$port';
+  }
+
   static String get websocketUrl {
     final resolvedHost = kIsWeb ? 'localhost' : host;
     return 'ws://$resolvedHost:$port/ws';

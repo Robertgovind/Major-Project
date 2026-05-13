@@ -19,15 +19,230 @@ class FruitAnalysisScreen extends StatefulWidget {
 
 class _FruitAnalysisScreenState extends State<FruitAnalysisScreen> {
   SensorProvider? _sensorProvider;
+  bool _calibrationDialogShown = false;
 
   @override
   void initState() {
     super.initState();
-    // Start sensor stream when entering analysis
+    // Show calibration dialog when entering analysis
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      _sensorProvider?.startSensorStream();
+      _showCalibrationDialog();
     });
+  }
+
+  void _showCalibrationDialog() {
+    if (_calibrationDialogShown) return;
+    _calibrationDialogShown = true;
+
+    _sensorProvider?.startCalibration();
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => _buildCalibrationDialog(),
+    );
+  }
+
+  Widget _buildCalibrationDialog() {
+    return PopScope(
+      canPop: false,
+      child: AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        backgroundColor: Colors.white,
+        content: Consumer<SensorProvider>(
+          builder: (context, provider, _) {
+            final minutes = provider.calibrationTimeRemaining ~/ 60;
+            final seconds = provider.calibrationTimeRemaining % 60;
+            final timeString =
+                '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
+
+            // Auto-close when timer reaches 0
+            if (!provider.isCalibrating &&
+                provider.calibrationTimeRemaining == 0) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (mounted && Navigator.of(context).canPop()) {
+                  Navigator.of(context).pop();
+                }
+              });
+            }
+
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Header
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: AppColors.primaryGreen.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Column(
+                    children: [
+                      Icon(
+                        Icons.timelapse,
+                        color: AppColors.primaryGreen,
+                        size: 40,
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        'Sensor Calibration',
+                        style: Theme.of(context).textTheme.headlineSmall
+                            ?.copyWith(
+                              color: AppColors.primaryGreen,
+                              fontWeight: FontWeight.bold,
+                            ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Initializing sensor readings',
+                        style: Theme.of(
+                          context,
+                        ).textTheme.bodySmall?.copyWith(color: Colors.black54),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 24),
+
+                // Timer Display
+                Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        AppColors.primaryBlue.withValues(alpha: 0.15),
+                        AppColors.primaryOrange.withValues(alpha: 0.1),
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: AppColors.primaryBlue.withValues(alpha: 0.2),
+                    ),
+                  ),
+                  child: Column(
+                    children: [
+                      Text(
+                        'Time Remaining',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Colors.black54,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        timeString,
+                        style: Theme.of(context).textTheme.displayMedium
+                            ?.copyWith(
+                              color: AppColors.primaryBlue,
+                              fontWeight: FontWeight.bold,
+                              fontFamily: 'monospace',
+                            ),
+                      ),
+                      const SizedBox(height: 12),
+                      // Progress bar
+                      LinearProgressIndicator(
+                        value: provider.calibrationTimeRemaining / 600,
+                        minHeight: 6,
+                        backgroundColor: Colors.black12,
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          AppColors.primaryGreen,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 24),
+
+                // Info text
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: Colors.orange.withValues(alpha: 0.3),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.info_outline, color: Colors.orange, size: 20),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          'Please place the fruit in the sensor chamber',
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(color: Colors.black87, height: 1.4),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 24),
+
+                // Action buttons
+                Row(
+                  children: [
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          if (provider.isCalibrating) {
+                            provider.pauseCalibration();
+                          } else {
+                            provider.resumeCalibration();
+                          }
+                        },
+                        icon: Icon(
+                          provider.isCalibrating
+                              ? Icons.pause
+                              : Icons.play_arrow,
+                        ),
+                        label: Text(
+                          provider.isCalibrating ? 'Pause' : 'Resume',
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primaryBlue,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () {
+                          provider.cancelCalibration();
+                          if (mounted && Navigator.of(context).canPop()) {
+                            Navigator.of(context).pop();
+                          }
+                        },
+                        icon: const Icon(Icons.close),
+                        label: const Text('Cancel'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppColors.primaryRed,
+                          side: BorderSide(
+                            color: AppColors.primaryRed.withValues(alpha: 0.5),
+                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            );
+          },
+        ),
+      ),
+    );
   }
 
   @override
@@ -40,61 +255,145 @@ class _FruitAnalysisScreenState extends State<FruitAnalysisScreen> {
   void dispose() {
     // Stop sensor stream when leaving
     _sensorProvider?.stopSensorStream(notify: false);
+    _sensorProvider?.cancelCalibration();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        leading: BackButton(
-          onPressed: () {
-            if (context.canPop()) {
-              context.pop();
-            } else {
-              context.go('/fruit-selection');
-            }
-          },
-        ),
-        title: const Text(AppStrings.analysisTitle),
-        backgroundColor: AppColors.primaryGreen,
-        elevation: 0,
-      ),
       body: Consumer<SensorProvider>(
         builder: (context, provider, child) {
-          if (!provider.isStreaming) {
-            return const Center(child: CircularProgressIndicator());
+          // Show loading state during calibration
+          if (provider.isCalibrating) {
+            return CustomScrollView(
+              slivers: [
+                SliverAppBar(
+                  leading: BackButton(
+                    onPressed: () {
+                      if (context.canPop()) {
+                        context.pop();
+                      } else {
+                        context.go('/fruit-selection');
+                      }
+                    },
+                  ),
+                  title: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      Text(AppStrings.analysisTitle),
+                      Text(
+                        _getStatusText(
+                          context.watch<SensorProvider>().sensorStatus,
+                        ),
+                        style: TextStyle(
+                          color: _getStatusColor(
+                            context.watch<SensorProvider>().sensorStatus,
+                          ),
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                  backgroundColor: const Color.fromARGB(255, 45, 91, 47),
+                  elevation: 0,
+                  floating: true,
+                  snap: true,
+                ),
+                SliverFillRemaining(
+                  child: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: const [
+                        SizedBox(
+                          width: 60,
+                          height: 60,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 4,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              Color.fromARGB(255, 6, 219, 13),
+                            ),
+                          ),
+                        ),
+                        SizedBox(height: 24),
+                        Text(
+                          'Calibrating sensor...',
+                          style: TextStyle(fontSize: 16, color: Colors.black54),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            );
           }
 
-          return SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // VOC Gas Chart
-                _buildVocChart(provider),
+          return CustomScrollView(
+            slivers: [
+              SliverAppBar(
+                leading: BackButton(
+                  onPressed: () {
+                    if (context.canPop()) {
+                      context.pop();
+                    } else {
+                      context.go('/fruit-selection');
+                    }
+                  },
+                ),
+                title: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    Text(AppStrings.analysisTitle),
+                    Text(
+                      _getStatusText(
+                        context.watch<SensorProvider>().sensorStatus,
+                      ),
+                      style: TextStyle(
+                        color: _getStatusColor(
+                          context.watch<SensorProvider>().sensorStatus,
+                        ),
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+                backgroundColor: const Color.fromARGB(255, 45, 91, 47),
+                elevation: 0,
+                floating: true,
+                snap: true,
+              ),
+              SliverPadding(
+                padding: const EdgeInsets.all(16),
+                sliver: SliverList(
+                  delegate: SliverChildListDelegate([
+                    // VOC Gas Chart
+                    _buildVocChart(provider),
 
-                const SizedBox(height: 24),
+                    const SizedBox(height: 24),
 
-                // Chemical Ripening Chart
-                _buildChemicalRipeningChart(provider),
+                    // Chemical Ripening Chart
+                    _buildChemicalRipeningChart(provider),
 
-                const SizedBox(height: 24),
+                    const SizedBox(height: 24),
 
-                // Sensor Panel
-                _buildSensorPanel(provider),
+                    // Sensor Panel
+                    _buildSensorPanel(provider),
 
-                const SizedBox(height: 24),
+                    const SizedBox(height: 24),
 
-                // AI Prediction Card
-                _buildPredictionCard(provider),
+                    // AI Prediction Card
+                    _buildPredictionCard(provider),
 
-                const SizedBox(height: 24),
+                    const SizedBox(height: 24),
 
-                // Analysis Summary
-                _buildAnalysisSummary(provider),
-              ],
-            ),
+                    // Analysis Summary
+                    _buildAnalysisSummary(provider),
+                  ]),
+                ),
+              ),
+            ],
           );
         },
       ),
@@ -102,7 +401,7 @@ class _FruitAnalysisScreenState extends State<FruitAnalysisScreen> {
   }
 
   Widget _buildVocChart(SensorProvider provider) {
-    final history = provider.sensorHistory;
+    final history = provider.getSensorHistory();
     if (history.isEmpty) return const SizedBox();
 
     final spots = history.asMap().entries.map((entry) {
@@ -240,7 +539,7 @@ class _FruitAnalysisScreenState extends State<FruitAnalysisScreen> {
   }
 
   Widget _buildChemicalRipeningChart(SensorProvider provider) {
-    final history = provider.sensorHistory;
+    final history = provider.getSensorHistory();
     if (history.isEmpty) return const SizedBox();
 
     final spots = history.asMap().entries.map((entry) {
@@ -322,8 +621,7 @@ class _FruitAnalysisScreenState extends State<FruitAnalysisScreen> {
   }
 
   Widget _buildSensorPanel(SensorProvider provider) {
-    final data = provider.currentSensorData;
-    if (data == null) return const SizedBox();
+    final data = provider.getCurrentSensorData();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -436,8 +734,7 @@ class _FruitAnalysisScreenState extends State<FruitAnalysisScreen> {
   }
 
   Widget _buildPredictionCard(SensorProvider provider) {
-    final prediction = provider.currentPrediction;
-    if (prediction == null) return const SizedBox();
+    final prediction = provider.getCurrentPrediction();
 
     return AppCard(
       gradient: LinearGradient(
@@ -502,8 +799,7 @@ class _FruitAnalysisScreenState extends State<FruitAnalysisScreen> {
   }
 
   Widget _buildAnalysisSummary(SensorProvider provider) {
-    final prediction = provider.currentPrediction;
-    if (prediction == null) return const SizedBox();
+    final prediction = provider.getCurrentPrediction();
 
     return AppCard(
       child: Column(
@@ -524,5 +820,27 @@ class _FruitAnalysisScreenState extends State<FruitAnalysisScreen> {
         ],
       ),
     );
+  }
+
+  String _getStatusText(SensorStatus status) {
+    switch (status) {
+      case SensorStatus.live:
+        return 'Live';
+      case SensorStatus.waiting:
+        return 'Waiting';
+      case SensorStatus.offline:
+        return 'Offline';
+    }
+  }
+
+  Color _getStatusColor(SensorStatus status) {
+    switch (status) {
+      case SensorStatus.live:
+        return const Color.fromARGB(255, 6, 219, 13); // Green
+      case SensorStatus.waiting:
+        return Colors.orange;
+      case SensorStatus.offline:
+        return AppColors.primaryRed;
+    }
   }
 }
