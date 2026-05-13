@@ -3,7 +3,7 @@ const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
 const asNumber = (body, ...keys) => {
   for (const key of keys) {
     const value = body[key];
-    if (value !== undefined && value !== null && value !== '') {
+    if (value !== undefined && value !== null && value !== "") {
       return Number(value);
     }
   }
@@ -18,25 +18,30 @@ const normalizeVocPercent = (value) => {
 
 const normalizeSensorPayload = (body) => {
   const vocPercent = normalizeVocPercent(
-    asNumber(body, 'VOC_percent', 'vocPercent', 'voc', 'chemicalRipening'),
+    asNumber(body, "VOC_percent", "vocPercent", "voc", "chemicalRipening"),
   );
 
+  const gasResistance = asNumber(
+    body,
+    "Gas resistance in (Kohm)",
+    "GasResistance",
+    "gasResistance",
+    "gas",
+  );
+
+  const difference = asNumber(body, "Difference", "difference");
+
   return {
-    deviceId: String(body.deviceId || 'esp32-1'),
-    fruitType: String(body.fruitType || ''),
-    r: asNumber(body, 'Red', 'red', 'r'),
-    g: asNumber(body, 'Green', 'green', 'g'),
-    b: asNumber(body, 'Blue', 'blue', 'b'),
-    humidity: asNumber(body, 'Humidity', 'humidity'),
-    temperature: asNumber(body, 'Temperature', 'temperature'),
-    pressure: asNumber(body, 'Pressure', 'pressure'),
-    gasResistance: asNumber(
-      body,
-      'Gas resistance in (Kohm)',
-      'gasResistance',
-      'gas',
-    ),
-    difference: asNumber(body, 'Difference', 'difference'),
+    deviceId: String(body.deviceId || "esp32-1"),
+    fruitType: String(body.fruitType || ""),
+    r: asNumber(body, "Red", "red", "r") ?? 0,
+    g: asNumber(body, "Green", "green", "g") ?? 0,
+    b: asNumber(body, "Blue", "blue", "b") ?? 0,
+    humidity: asNumber(body, "Humidity", "humidity") ?? 0,
+    temperature: asNumber(body, "Temperature", "temperature") ?? 0,
+    pressure: asNumber(body, "Pressure", "pressure") ?? 0,
+    gasResistance: gasResistance ?? 0,
+    difference: difference ?? 0,
     vocPercent,
     voc: Number((vocPercent * 100).toFixed(2)),
     chemicalRipening: vocPercent,

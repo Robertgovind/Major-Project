@@ -1,28 +1,28 @@
-const path = require('path');
-const { spawn } = require('child_process');
+const path = require("path");
+const { spawn } = require("child_process");
 
-const scriptPath = path.resolve(__dirname, '../ml/predict.py');
+const scriptPath = path.resolve(__dirname, "../ml/predict.py");
 
 const runPythonPrediction = (features) =>
   new Promise((resolve, reject) => {
-    const python = spawn(process.env.PYTHON_BIN || 'python', [scriptPath], {
-      stdio: ['pipe', 'pipe', 'pipe'],
+    const python = spawn(process.env.PYTHON_BIN || "python", [scriptPath], {
+      stdio: ["pipe", "pipe", "pipe"],
     });
 
-    let stdout = '';
-    let stderr = '';
+    let stdout = "";
+    let stderr = "";
 
-    python.stdout.on('data', (chunk) => {
+    python.stdout.on("data", (chunk) => {
       stdout += chunk.toString();
     });
 
-    python.stderr.on('data', (chunk) => {
+    python.stderr.on("data", (chunk) => {
       stderr += chunk.toString();
     });
 
-    python.on('error', reject);
+    python.on("error", reject);
 
-    python.on('close', (code) => {
+    python.on("close", (code) => {
       if (code !== 0) {
         const message = stderr.trim() || `ML process exited with code ${code}.`;
         reject(new Error(message));
@@ -39,22 +39,22 @@ const runPythonPrediction = (features) =>
     python.stdin.end(JSON.stringify(features));
   });
 
-const formatStatus = (ripeness) => String(ripeness || 'Unknown').toLowerCase();
+const formatStatus = (ripeness) => String(ripeness || "Unknown").toLowerCase();
 
 const buildRecommendation = ({ ripeness, chemicalUsed }) => {
   const status = formatStatus(ripeness);
-  const isNatural = chemicalUsed !== 'YES';
-  const method = isNatural ? 'naturally' : 'chemically';
+  const isNatural = chemicalUsed !== "YES";
+  const method = isNatural ? "naturally" : "chemically";
 
-  if (status === 'unripe') {
+  if (status === "unripe") {
     return `Fruit is ${method} ripened and currently unripe. Wait for ripening.`;
   }
 
-  if (status === 'ripe') {
+  if (status === "ripe") {
     return `Fruit is ${method} ripened and currently ripe. Recommended for consumption within 2 days.`;
   }
 
-  if (status === 'overripe') {
+  if (status === "overripe") {
     return `Fruit is ${method} ripened and currently overripe. Consume immediately or discard.`;
   }
 
@@ -63,19 +63,19 @@ const buildRecommendation = ({ ripeness, chemicalUsed }) => {
 
 const predictFromSensorData = async (sensorData) => {
   const result = await runPythonPrediction({
-    Red: sensorData.r,
-    Green: sensorData.g,
-    Blue: sensorData.b,
-    Temperature: sensorData.temperature,
-    Humidity: sensorData.humidity,
-    Pressure: sensorData.pressure,
-    'Gas resistance in (Kohm)': sensorData.gasResistance,
-    Difference: sensorData.difference,
-    VOC_percent: sensorData.vocPercent,
+    Red: sensorData.r ?? 0,
+    Green: sensorData.g ?? 0,
+    Blue: sensorData.b ?? 0,
+    Temperature: sensorData.temperature ?? 0,
+    Humidity: sensorData.humidity ?? 0,
+    Pressure: sensorData.pressure ?? 0,
+    "Gas resistance in (Kohm)": sensorData.gasResistance ?? 0,
+    Difference: sensorData.difference ?? 0,
+    VOC_percent: sensorData.vocPercent ?? 0,
   });
 
   return {
-    isNaturalRipening: result.chemicalUsed !== 'YES',
+    isNaturalRipening: result.chemicalUsed !== "YES",
     status: formatStatus(result.ripeness),
     confidence: result.confidence,
     recommendation: buildRecommendation(result),
