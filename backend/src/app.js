@@ -22,6 +22,15 @@ if (env.nodeEnv !== "test") {
   app.use(morgan("dev"));
 }
 
+app.get("/", (req, res) => {
+  res.json({
+    success: true,
+    message: "Fruit Pulse backend is running.",
+    uptime: process.uptime(),
+    timestamp: new Date().toISOString(),
+  });
+});
+
 app.get("/health", (req, res) => {
   res.json({
     success: true,

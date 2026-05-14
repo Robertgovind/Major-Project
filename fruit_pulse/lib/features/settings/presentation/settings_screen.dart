@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:adaptive_theme/adaptive_theme.dart';
+import 'package:fruit_pulse/shared/providers/sensor_provider.dart';
+import 'package:provider/provider.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../shared/widgets/app_card.dart';
 
@@ -9,6 +11,7 @@ class SettingsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isLight = AdaptiveTheme.of(context).mode.isLight;
+    final sensorStatus = context.watch<SensorProvider>().sensorStatus;
 
     return Scaffold(
       appBar: AppBar(
@@ -58,7 +61,7 @@ class SettingsScreen extends StatelessWidget {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'Fruit Pulse Profile',
+                                'Device Id: GK-001',
                                 style: Theme.of(context).textTheme.headlineSmall
                                     ?.copyWith(
                                       color: AppColors.primaryGreen,
@@ -92,7 +95,7 @@ class SettingsScreen extends StatelessWidget {
                         ),
                         _buildProfileStat(
                           'Status',
-                          'Running',
+                          sensorStatus.toString().split('.').last.toUpperCase(),
                           AppColors.primaryGreen,
                         ),
                       ],
