@@ -26,13 +26,7 @@ class _FruitAnalysisScreenState extends State<FruitAnalysisScreen> {
   void initState() {
     super.initState();
     _sensorProvider = context.read<SensorProvider>();
-    _sensorProvider?.resetAnalysisData(notify: false);
-    _sensorProvider?.startSensorStream();
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
+    _sensorProvider?.restartAnalysisStream();
   }
 
   @override

@@ -42,6 +42,7 @@ class SensorProvider with ChangeNotifier {
 
   DateTime? _lastDataReceived;
   Timer? _statusCheckTimer;
+  int _streamSessionId = 0;
 
   // Calibration timer
   bool _isCalibrating = false;
@@ -80,13 +81,22 @@ class SensorProvider with ChangeNotifier {
 
   void startSensorStream() {
     print('Attempting to start sensor stream...');
-    if (_isStreaming || _isDisposed) return;
+    if (_isDisposed) return;
+
+    if (_isStreaming) {
+      _sensorStatus = SensorStatus.waiting;
+      _notifyIfActive();
+      return;
+    }
 
     _isStreaming = true;
     _sensorStatus = SensorStatus.waiting;
+    final sessionId = ++_streamSessionId;
     _sensorService.connect();
     _readingSubscription = _sensorService.readingStream.listen((reading) {
-      if (_isDisposed) return;
+      if (_isDisposed || !_isStreaming || sessionId != _streamSessionId) {
+        return;
+      }
 
       _currentSensorData = reading.sensorData;
       _sensorHistory.add(reading.sensorData);
@@ -120,9 +130,16 @@ class SensorProvider with ChangeNotifier {
     Future.microtask(_notifyIfActive);
   }
 
+  void restartAnalysisStream() {
+    stopSensorStream(notify: false);
+    resetAnalysisData(notify: false);
+    startSensorStream();
+  }
+
   void stopSensorStream({bool notify = true}) {
     if (!_isStreaming && _readingSubscription == null) return;
 
+    _streamSessionId++;
     _isStreaming = false;
     _sensorStatus = SensorStatus.offline;
     unawaited(_readingSubscription?.cancel());

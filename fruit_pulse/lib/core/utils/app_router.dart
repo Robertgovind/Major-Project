@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:go_router/go_router.dart';
 import '../../shared/widgets/main_scaffold.dart';
 import '../../features/dashboard/presentation/dashboard_screen.dart';
@@ -22,7 +23,10 @@ class AppRouter {
             path: '/analysis',
             builder: (context, state) {
               final fruitId = state.uri.queryParameters['fruitId'] ?? '';
-              return FruitAnalysisScreen(fruitId: fruitId);
+              return FruitAnalysisScreen(
+                key: ValueKey(state.uri.toString()),
+                fruitId: fruitId,
+              );
             },
           ),
           GoRoute(
