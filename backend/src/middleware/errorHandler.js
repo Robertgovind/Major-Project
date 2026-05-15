@@ -1,28 +1,38 @@
-const { ZodError } = require('zod');
+const { ZodError } = require("zod");
 
 const errorHandler = (err, req, res, next) => {
+  // Handle JSON parsing errors
+  if (err instanceof SyntaxError && "body" in err) {
+    return res.status(400).json({
+      success: false,
+      message:
+        "Invalid JSON payload from sensor. Ensure all numeric values are valid numbers (not NaN or Infinity).",
+      details: err.message,
+    });
+  }
+
   if (err instanceof ZodError) {
     return res.status(400).json({
       success: false,
-      message: 'Validation failed.',
+      message: "Validation failed.",
       errors: err.errors.map((error) => ({
-        path: error.path.join('.'),
+        path: error.path.join("."),
         message: error.message,
       })),
     });
   }
 
-  if (err.name === 'CastError') {
+  if (err.name === "CastError") {
     return res.status(400).json({
       success: false,
-      message: 'Invalid identifier.',
+      message: "Invalid identifier.",
     });
   }
 
   if (err.code === 11000) {
     return res.status(409).json({
       success: false,
-      message: 'Duplicate record.',
+      message: "Duplicate record.",
       fields: Object.keys(err.keyPattern || {}),
     });
   }
@@ -31,7 +41,7 @@ const errorHandler = (err, req, res, next) => {
 
   return res.status(err.statusCode || 500).json({
     success: false,
-    message: err.message || 'Internal server error.',
+    message: err.message || "Internal server error.",
   });
 };
 
