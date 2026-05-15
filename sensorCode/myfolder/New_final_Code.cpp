@@ -9,12 +9,11 @@
    WIFI
 ===================================================== */
 
-const char *ssid = "nrb116_fpkhr";
-const char *password = "Acharya116@";
+const char* ssid = "nrb116_fpkhr";
+const char* password = "Acharya116@";
 
-const char *server =
-    "http://192.168.1.88:5000/api/v1/sensor-data";
-const char *apiKey = "major-project-secret-key873468734r";
+const char* server = "http://192.168.1.99:5000/predict";
+
 
 /* =====================================================
    BME680
@@ -154,9 +153,10 @@ int mapColor(int value, int minVal, int maxVal)
 ===================================================== */
 
 void sendToServer(
-    int R,
-    int G,
-    int B)
+  int R,
+  int G,
+  int B
+)
 {
   if (WiFi.status() == WL_CONNECTED)
   {
@@ -165,23 +165,22 @@ void sendToServer(
     http.begin(server);
 
     http.addHeader("Content-Type", "application/json");
-    http.addHeader("X-API-Key", apiKey);
 
     String json = "{";
 
-    json += "\"r\":" + String(R) + ",";
-    json += "\"g\":" + String(G) + ",";
-    json += "\"b\":" + String(B) + ",";
+    json += "\"Red\":" + String(R) + ",";
+    json += "\"Green\":" + String(G) + ",";
+    json += "\"Blue\":" + String(B) + ",";
 
-    json += "\"temperature\":" + String(temperature, 2) + ",";
-    json += "\"humidity\":" + String(humidity, 2) + ",";
-    json += "\"pressure\":" + String(pressure, 2) + ",";
+    json += "\"Temperature\":" + String(temperature) + ",";
+    json += "\"Humidity\":" + String(humidity) + ",";
+    json += "\"Pressure\":" + String(pressure) + ",";
 
-    json += "\"gasResistance\":" + String(gas, 2) + ",";
+    json += "\"Gas resistance in (Kohm)\":" + String(gas) + ",";
 
-    json += "\"difference\":" + String(gasDifference, 2) + ",";
+    json += "\"Difference\":" + String(gasDifference) + ",";
 
-    json += "\"vocPercent\":" + String(vocPercent, 2);
+    json += "\"VOC_percent\":" + String(vocPercent);
 
     json += "}";
 
@@ -256,8 +255,7 @@ void setup()
     {
       Serial.println("BME680 NOT FOUND");
 
-      while (1)
-        ;
+      while (1);
     }
   }
 
@@ -334,6 +332,7 @@ void loop()
       }
     }
   }
+  
 
   /* =====================================================
      UPDATE BME680
@@ -440,32 +439,34 @@ void loop()
     Serial.print("VOC %: ");
     Serial.println(vocPercent);
 
+     
+
     String row = "";
 
-    row += String(R);
-    row += ",";
+row += String(R);
+row += ",";
 
-    row += String(G);
-    row += ",";
+row += String(G);
+row += ",";
 
-    row += String(B);
-    row += ",";
+row += String(B);
+row += ",";
 
-    row += String(temperature, 2);
-    row += ",";
+row += String(temperature, 2);
+row += ",";
 
-    row += String(humidity, 2);
-    row += ",";
+row += String(humidity, 2);
+row += ",";
 
-    row += String(pressure, 2);
-    row += ",";
+row += String(pressure, 2);
+row += ",";
 
-    row += String(gas, 2);
-    row += ",";
+row += String(gas, 2);
+row += ",";
 
-    row += String(gasDifference, 2);
+row += String(gasDifference, 2);
 
-    storedData += row + "\n";
+storedData += row + "\n";
 
     /* ------------ SEND TO SERVER ------------ */
 
@@ -483,4 +484,5 @@ void loop()
   }
 
   delay(5000);
+
 }
