@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:fruit_pulse/features/analytics/history_tab.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
@@ -16,13 +17,13 @@ class AnalyticsScreen extends StatelessWidget {
       length: 2,
       child: Scaffold(
         appBar: AppBar(
-          title: const Text('Analytics & News'),
+          title: const Text('News & Sensor History'),
           backgroundColor: AppColors.primaryGreen,
           bottom: const TabBar(
             indicatorColor: Colors.white,
             tabs: [
               Tab(text: 'News'),
-              Tab(text: 'History'),
+              Tab(text: 'Sensor History'),
             ],
           ),
         ),
@@ -31,7 +32,7 @@ class AnalyticsScreen extends StatelessWidget {
             return TabBarView(
               children: [
                 _buildNewsTab(context, newsProvider),
-                _buildHistoryTab(context, sensorProvider),
+                HistoryTab(provider: sensorProvider),
               ],
             );
           },
@@ -206,116 +207,5 @@ class AnalyticsScreen extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  Widget _buildHistoryTab(BuildContext context, SensorProvider sensorProvider) {
-    final history = sensorProvider.sensorHistory.reversed.toList();
-
-    return history.isEmpty
-        ? Center(
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Text(
-                'No sensor history available yet. Start the live sensor stream to see readings here.',
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.bodyLarge,
-              ),
-            ),
-          )
-        : ListView.separated(
-            padding: const EdgeInsets.all(16),
-            itemCount: history.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 12),
-            itemBuilder: (context, index) {
-              final reading = history[index];
-              return Card(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                elevation: 1,
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        _formatTimestamp(reading.timestamp),
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Colors.grey[600],
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          _buildBadge('R', reading.r, AppColors.primaryRed),
-                          const SizedBox(width: 8),
-                          _buildBadge('G', reading.g, AppColors.primaryGreen),
-                          const SizedBox(width: 8),
-                          _buildBadge('B', reading.b, AppColors.primaryBlue),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      Wrap(
-                        spacing: 12,
-                        runSpacing: 10,
-                        children: [
-                          _buildStat(
-                            'Temp',
-                            '${reading.temperature.toStringAsFixed(1)}°C',
-                          ),
-                          _buildStat(
-                            'Humidity',
-                            '${reading.humidity.toStringAsFixed(1)}%',
-                          ),
-                          _buildStat('VOC', reading.voc.toStringAsFixed(2)),
-                          _buildStat(
-                            'Ripening',
-                            '${(reading.chemicalRipening * 100).toStringAsFixed(1)}%',
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            },
-          );
-  }
-
-  Widget _buildBadge(String label, int value, Color backgroundColor) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: backgroundColor.withOpacity(0.12),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Text(
-        '$label: $value',
-        style: TextStyle(color: backgroundColor, fontWeight: FontWeight.bold),
-      ),
-    );
-  }
-
-  Widget _buildStat(String label, String value) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(label, style: const TextStyle(fontSize: 12, color: Colors.grey)),
-        const SizedBox(height: 4),
-        Text(
-          value,
-          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
-        ),
-      ],
-    );
-  }
-
-  String _formatTimestamp(DateTime timestamp) {
-    final local = timestamp.toLocal();
-    return '${local.year}-${_twoDigits(local.month)}-${_twoDigits(local.day)} ${_twoDigits(local.hour)}:${_twoDigits(local.minute)}';
-  }
-
-  String _twoDigits(int value) {
-    return value.toString().padLeft(2, '0');
   }
 }

@@ -36,7 +36,7 @@ class _FruitAnalysisScreenState extends State<FruitAnalysisScreen> {
   void _showCalibrationDialog() {
     if (_calibrationDialogShown) return;
     _calibrationDialogShown = true;
-    // I want to start the timer when clicked on resume button
+    // I want to start the timer when clicked on resume button so removed this function call
     //_sensorProvider?.startCalibration();
 
     showDialog(

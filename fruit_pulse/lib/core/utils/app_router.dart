@@ -3,7 +3,7 @@ import '../../shared/widgets/main_scaffold.dart';
 import '../../features/dashboard/presentation/dashboard_screen.dart';
 import '../../features/fruit_selection/presentation/fruit_selection_screen.dart';
 import '../../features/fruit_analysis/presentation/fruit_analysis_screen.dart';
-import '../../features/analytics/presentation/analytics_screen.dart';
+import '../../features/analytics/presentation/news_and_history_screen.dart';
 import '../../features/analytics/presentation/news_detail_screen.dart';
 import '../../features/settings/presentation/settings_screen.dart';
 

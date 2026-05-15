@@ -19,7 +19,7 @@ class MainScaffold extends StatelessWidget {
                 BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
                 BottomNavigationBarItem(
                   icon: Icon(Icons.analytics),
-                  label: 'Analytics & News',
+                  label: 'News & History',
                 ),
                 BottomNavigationBarItem(
                   icon: Icon(Icons.settings),
