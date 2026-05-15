@@ -308,9 +308,11 @@ class _FruitAnalysisScreenState extends State<FruitAnalysisScreen> {
           ),
           const SizedBox(height: 16),
           Text(
-            prediction.isNaturalRipening
-                ? AppStrings.naturalRipening
-                : AppStrings.chemicalRipening,
+            prediction.status == 'unripe'
+                ? 'Unripe'
+                : prediction.isNaturalRipening
+                ? 'Naturally Ripened'
+                : 'Chemically Ripened',
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
               color: Colors.white,
               fontWeight: FontWeight.w600,

@@ -36,7 +36,7 @@ class ApiConfig {
       return _configuredBaseUrl.replaceFirst(RegExp(r'/$'), '');
     }
 
-    return 'http://$_defaultHost:$port';
+    return 'https://fruit-pulse-backend.onrender.com';
   }
 
   static String get websocketUrl {

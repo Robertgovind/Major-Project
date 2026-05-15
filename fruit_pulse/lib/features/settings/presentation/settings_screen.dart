@@ -11,7 +11,6 @@ class SettingsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isLight = AdaptiveTheme.of(context).mode.isLight;
-    final sensorStatus = context.watch<SensorProvider>().sensorStatus;
 
     return Scaffold(
       appBar: AppBar(
@@ -95,12 +94,12 @@ class SettingsScreen extends StatelessWidget {
                         ),
                         _buildProfileStat(
                           'Status',
-                          sensorStatus.toString().split('.').last.toUpperCase(),
-                          sensorStatus == SensorStatus.live
-                              ? AppColors.primaryGreen
-                              : (sensorStatus == SensorStatus.waiting
-                                    ? AppColors.primaryOrange
-                                    : AppColors.primaryRed),
+                          _getStatusText(
+                            context.watch<SensorProvider>().sensorStatus,
+                          ),
+                          _getStatusColor(
+                            context.watch<SensorProvider>().sensorStatus,
+                          ),
                         ),
                       ],
                     ),
@@ -308,5 +307,27 @@ class SettingsScreen extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+String _getStatusText(SensorStatus status) {
+  switch (status) {
+    case SensorStatus.live:
+      return 'Live';
+    case SensorStatus.waiting:
+      return 'Waiting';
+    case SensorStatus.offline:
+      return 'Offline';
+  }
+}
+
+Color _getStatusColor(SensorStatus status) {
+  switch (status) {
+    case SensorStatus.live:
+      return const Color.fromARGB(255, 6, 219, 13); // Green
+    case SensorStatus.waiting:
+      return Colors.orange;
+    case SensorStatus.offline:
+      return AppColors.primaryRed;
   }
 }

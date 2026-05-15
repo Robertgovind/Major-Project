@@ -12,8 +12,9 @@ import '../../core/constants/api_config.dart';
 enum SensorStatus { offline, waiting, live }
 
 class SensorProvider with ChangeNotifier {
-  static const String _sensorHistoryStorageKey = 'sensor_history_v1';
-  static const String _predictionHistoryStorageKey = 'prediction_history_v1';
+  static const String _sensorHistoryStorageKey = 'sensor_iteration_history_v1';
+  static const String _predictionHistoryStorageKey =
+      'prediction_iteration_history_v1';
   static const int _maxSessionItems = 60;
   static const int _maxStoredItems = 300;
 
@@ -43,6 +44,7 @@ class SensorProvider with ChangeNotifier {
   DateTime? _lastDataReceived;
   Timer? _statusCheckTimer;
   int _streamSessionId = 0;
+  int? _activeHistoryIndex;
 
   // Calibration timer
   bool _isCalibrating = false;
@@ -91,6 +93,7 @@ class SensorProvider with ChangeNotifier {
 
     _isStreaming = true;
     _sensorStatus = SensorStatus.waiting;
+    _activeHistoryIndex = null;
     final sessionId = ++_streamSessionId;
     _sensorService.connect();
     _readingSubscription = _sensorService.readingStream.listen((reading) {
@@ -99,26 +102,20 @@ class SensorProvider with ChangeNotifier {
       }
 
       _currentSensorData = reading.sensorData;
-      _sensorHistory.add(reading.sensorData);
       _analysisSensorHistory.add(reading.sensorData);
       print('New sensor reading received: ${reading.sensorData}');
 
-      if (_sensorHistory.length > _maxStoredItems) {
-        _sensorHistory.removeAt(0);
-      }
       if (_analysisSensorHistory.length > _maxSessionItems) {
         _analysisSensorHistory.removeAt(0);
       }
 
       _currentPrediction = reading.prediction;
-      _predictionHistory.add(reading.prediction);
       _analysisPredictionHistory.add(reading.prediction);
-      if (_predictionHistory.length > _maxStoredItems) {
-        _predictionHistory.removeAt(0);
-      }
       if (_analysisPredictionHistory.length > _maxSessionItems) {
         _analysisPredictionHistory.removeAt(0);
       }
+
+      _storeLatestSessionResult(reading);
 
       _lastDataReceived = DateTime.now();
       unawaited(_saveStoredHistory());
@@ -142,6 +139,7 @@ class SensorProvider with ChangeNotifier {
     _streamSessionId++;
     _isStreaming = false;
     _sensorStatus = SensorStatus.offline;
+    _activeHistoryIndex = null;
     unawaited(_readingSubscription?.cancel());
     _readingSubscription = null;
     _sensorService.disconnect();
@@ -156,6 +154,7 @@ class SensorProvider with ChangeNotifier {
     _currentPrediction = null;
     _analysisSensorHistory.clear();
     _analysisPredictionHistory.clear();
+    _activeHistoryIndex = null;
     _lastDataReceived = null;
     _calibrationTimer?.cancel();
     _calibrationTimer = null;
@@ -170,6 +169,33 @@ class SensorProvider with ChangeNotifier {
 
     if (notify) {
       _notifyIfActive();
+    }
+  }
+
+  void _storeLatestSessionResult(LiveSensorReading reading) {
+    final index = _activeHistoryIndex;
+
+    if (index != null &&
+        index >= 0 &&
+        index < _sensorHistory.length &&
+        index < _predictionHistory.length) {
+      _sensorHistory[index] = reading.sensorData;
+      _predictionHistory[index] = reading.prediction;
+      return;
+    }
+
+    _sensorHistory.add(reading.sensorData);
+    _predictionHistory.add(reading.prediction);
+    _activeHistoryIndex = _sensorHistory.length - 1;
+
+    while (_sensorHistory.length > _maxStoredItems ||
+        _predictionHistory.length > _maxStoredItems) {
+      _sensorHistory.removeAt(0);
+      _predictionHistory.removeAt(0);
+      if (_activeHistoryIndex != null) {
+        final nextIndex = _activeHistoryIndex! - 1;
+        _activeHistoryIndex = nextIndex < 0 ? 0 : nextIndex;
+      }
     }
   }
 
