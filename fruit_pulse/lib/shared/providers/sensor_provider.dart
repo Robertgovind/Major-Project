@@ -36,7 +36,7 @@ class SensorProvider with ChangeNotifier {
   bool _isCalibrating = false;
   bool get isCalibrating => _isCalibrating;
 
-  int _calibrationTimeRemaining = 600; // 10 minutes in seconds
+  int _calibrationTimeRemaining = 420; // 7 minutes in seconds
   int get calibrationTimeRemaining => _calibrationTimeRemaining;
 
   Timer? _calibrationTimer;
@@ -187,7 +187,7 @@ class SensorProvider with ChangeNotifier {
     if (_isCalibrating) return;
 
     _isCalibrating = true;
-    _calibrationTimeRemaining = 600; // Reset to 10 minutes
+    _calibrationTimeRemaining = 420; // Reset to 10 minutes
     _notifyIfActive();
 
     _calibrationTimer = Timer.periodic(const Duration(seconds: 1), (_) {
@@ -243,7 +243,7 @@ class SensorProvider with ChangeNotifier {
     _calibrationTimer?.cancel();
     _calibrationTimer = null;
     _isCalibrating = false;
-    _calibrationTimeRemaining = 600;
+    _calibrationTimeRemaining = 420;
     _notifyIfActive();
   }
 

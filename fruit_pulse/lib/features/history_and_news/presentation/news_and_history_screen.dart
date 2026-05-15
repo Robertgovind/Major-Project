@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:fruit_pulse/features/analytics/history_tab.dart';
+import 'package:fruit_pulse/features/history_and_news/widgets/history_tab.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 

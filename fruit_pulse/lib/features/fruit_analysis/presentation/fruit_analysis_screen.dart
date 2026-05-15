@@ -55,8 +55,9 @@ class _FruitAnalysisScreenState extends State<FruitAnalysisScreen> {
   @override
   void dispose() {
     // Stop sensor stream when leaving
-    _sensorProvider?.stopSensorStream(notify: false);
+
     _sensorProvider?.cancelCalibration();
+    _sensorProvider?.stopSensorStream(notify: false);
     super.dispose();
   }
 
