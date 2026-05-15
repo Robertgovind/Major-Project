@@ -1,7 +1,9 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/utils/live_sensor_service.dart';
 import '../../shared/models/sensor_data.dart';
 import '../../shared/models/prediction_result.dart';
@@ -10,6 +12,11 @@ import '../../core/constants/api_config.dart';
 enum SensorStatus { offline, waiting, live }
 
 class SensorProvider with ChangeNotifier {
+  static const String _sensorHistoryStorageKey = 'sensor_history_v1';
+  static const String _predictionHistoryStorageKey = 'prediction_history_v1';
+  static const int _maxSessionItems = 60;
+  static const int _maxStoredItems = 300;
+
   final LiveSensorService _sensorService = LiveSensorService();
   final Dio _dio = Dio();
   StreamSubscription<LiveSensorReading>? _readingSubscription;
@@ -18,10 +25,14 @@ class SensorProvider with ChangeNotifier {
   SensorData? _currentSensorData;
   PredictionResult? _currentPrediction;
   final List<SensorData> _sensorHistory = [];
+  final List<PredictionResult> _predictionHistory = [];
+  final List<SensorData> _analysisSensorHistory = [];
+  final List<PredictionResult> _analysisPredictionHistory = [];
 
   SensorData? get currentSensorData => _currentSensorData;
   PredictionResult? get currentPrediction => _currentPrediction;
   List<SensorData> get sensorHistory => _sensorHistory;
+  List<PredictionResult> get predictionHistory => _predictionHistory;
 
   bool _isStreaming = false;
   bool get isStreaming => _isStreaming;
@@ -48,6 +59,7 @@ class SensorProvider with ChangeNotifier {
     b: 0,
     temperature: 0.0,
     humidity: 0.0,
+    gasResistance: 0.0,
     voc: 0.0,
     chemicalRipening: 0.0,
     timestamp: DateTime.now(),
@@ -62,10 +74,12 @@ class SensorProvider with ChangeNotifier {
   );
 
   SensorProvider() {
+    unawaited(_loadStoredHistory());
     _startStatusCheckTimer();
   }
 
   void startSensorStream() {
+    print('Attempting to start sensor stream...');
     if (_isStreaming || _isDisposed) return;
 
     _isStreaming = true;
@@ -76,18 +90,34 @@ class SensorProvider with ChangeNotifier {
 
       _currentSensorData = reading.sensorData;
       _sensorHistory.add(reading.sensorData);
+      _analysisSensorHistory.add(reading.sensorData);
+      print('New sensor reading received: ${reading.sensorData}');
 
-      if (_sensorHistory.length > 60) {
+      if (_sensorHistory.length > _maxStoredItems) {
         _sensorHistory.removeAt(0);
+      }
+      if (_analysisSensorHistory.length > _maxSessionItems) {
+        _analysisSensorHistory.removeAt(0);
       }
 
       _currentPrediction = reading.prediction;
+      _predictionHistory.add(reading.prediction);
+      _analysisPredictionHistory.add(reading.prediction);
+      if (_predictionHistory.length > _maxStoredItems) {
+        _predictionHistory.removeAt(0);
+      }
+      if (_analysisPredictionHistory.length > _maxSessionItems) {
+        _analysisPredictionHistory.removeAt(0);
+      }
+
       _lastDataReceived = DateTime.now();
+      unawaited(_saveStoredHistory());
       _updateSensorStatus();
       _notifyIfActive();
     });
 
-    _notifyIfActive();
+    // Defer notification until after build phase completes
+    Future.microtask(_notifyIfActive);
   }
 
   void stopSensorStream({bool notify = true}) {
@@ -104,6 +134,28 @@ class SensorProvider with ChangeNotifier {
     }
   }
 
+  void resetAnalysisData({bool notify = true}) {
+    _currentSensorData = null;
+    _currentPrediction = null;
+    _analysisSensorHistory.clear();
+    _analysisPredictionHistory.clear();
+    _lastDataReceived = null;
+    _calibrationTimer?.cancel();
+    _calibrationTimer = null;
+    _isCalibrating = false;
+    _calibrationTimeRemaining = 60;
+
+    if (!_isStreaming) {
+      _sensorStatus = SensorStatus.offline;
+    } else {
+      _sensorStatus = SensorStatus.waiting;
+    }
+
+    if (notify) {
+      _notifyIfActive();
+    }
+  }
+
   void _startStatusCheckTimer() {
     _statusCheckTimer = Timer.periodic(const Duration(seconds: 2), (_) async {
       await _checkBackendSensorStatus();
@@ -112,6 +164,10 @@ class SensorProvider with ChangeNotifier {
   }
 
   Future<void> _checkBackendSensorStatus() async {
+    if (_isStreaming && _lastDataReceived == null) {
+      return;
+    }
+
     try {
       final response = await _dio.get(
         '${ApiConfig.baseUrl}/api/v1/sensor-data/status',
@@ -177,9 +233,71 @@ class SensorProvider with ChangeNotifier {
 
   // Get sensor history, returning empty list with default data if offline
   List<SensorData> getSensorHistory() {
-    if (_sensorHistory.isNotEmpty) return _sensorHistory;
-    // Return some default history points for charts
-    return List.generate(10, (_) => _defaultSensorData);
+    if (_analysisSensorHistory.isNotEmpty) return _analysisSensorHistory;
+    return const [];
+  }
+
+  List<PredictionResult> getPredictionHistory() {
+    if (_analysisPredictionHistory.isNotEmpty) {
+      return _analysisPredictionHistory;
+    }
+    return const [];
+  }
+
+  Future<void> _loadStoredHistory() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final sensorJson = prefs.getString(_sensorHistoryStorageKey);
+      final predictionJson = prefs.getString(_predictionHistoryStorageKey);
+
+      if (sensorJson != null) {
+        final decoded = jsonDecode(sensorJson) as List<dynamic>;
+        _sensorHistory
+          ..clear()
+          ..addAll(
+            decoded
+                .whereType<Map>()
+                .map((item) => SensorData.fromJson(_jsonMap(item)))
+                .take(_maxStoredItems),
+          );
+      }
+
+      if (predictionJson != null) {
+        final decoded = jsonDecode(predictionJson) as List<dynamic>;
+        _predictionHistory
+          ..clear()
+          ..addAll(
+            decoded
+                .whereType<Map>()
+                .map((item) => PredictionResult.fromJson(_jsonMap(item)))
+                .take(_maxStoredItems),
+          );
+      }
+
+      _notifyIfActive();
+    } catch (_) {
+      // Ignore corrupt local history and continue with a fresh in-memory state.
+    }
+  }
+
+  Future<void> _saveStoredHistory() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(
+        _sensorHistoryStorageKey,
+        jsonEncode(_sensorHistory.map((item) => item.toJson()).toList()),
+      );
+      await prefs.setString(
+        _predictionHistoryStorageKey,
+        jsonEncode(_predictionHistory.map((item) => item.toJson()).toList()),
+      );
+    } catch (_) {
+      // Persistence should not interrupt live plotting.
+    }
+  }
+
+  Map<String, dynamic> _jsonMap(Map item) {
+    return item.map((key, value) => MapEntry(key.toString(), value));
   }
 
   // Calibration timer methods

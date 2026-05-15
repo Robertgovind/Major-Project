@@ -26,6 +26,7 @@ mixin _$SensorData {
   int get b => throw _privateConstructorUsedError;
   double get humidity => throw _privateConstructorUsedError;
   double get temperature => throw _privateConstructorUsedError;
+  double get gasResistance => throw _privateConstructorUsedError;
   double get voc => throw _privateConstructorUsedError;
   double get chemicalRipening => throw _privateConstructorUsedError;
   DateTime get timestamp => throw _privateConstructorUsedError;
@@ -53,6 +54,7 @@ abstract class $SensorDataCopyWith<$Res> {
     int b,
     double humidity,
     double temperature,
+    double gasResistance,
     double voc,
     double chemicalRipening,
     DateTime timestamp,
@@ -79,6 +81,7 @@ class _$SensorDataCopyWithImpl<$Res, $Val extends SensorData>
     Object? b = null,
     Object? humidity = null,
     Object? temperature = null,
+    Object? gasResistance = null,
     Object? voc = null,
     Object? chemicalRipening = null,
     Object? timestamp = null,
@@ -104,6 +107,10 @@ class _$SensorDataCopyWithImpl<$Res, $Val extends SensorData>
             temperature: null == temperature
                 ? _value.temperature
                 : temperature // ignore: cast_nullable_to_non_nullable
+                      as double,
+            gasResistance: null == gasResistance
+                ? _value.gasResistance
+                : gasResistance // ignore: cast_nullable_to_non_nullable
                       as double,
             voc: null == voc
                 ? _value.voc
@@ -138,6 +145,7 @@ abstract class _$$SensorDataImplCopyWith<$Res>
     int b,
     double humidity,
     double temperature,
+    double gasResistance,
     double voc,
     double chemicalRipening,
     DateTime timestamp,
@@ -163,6 +171,7 @@ class __$$SensorDataImplCopyWithImpl<$Res>
     Object? b = null,
     Object? humidity = null,
     Object? temperature = null,
+    Object? gasResistance = null,
     Object? voc = null,
     Object? chemicalRipening = null,
     Object? timestamp = null,
@@ -188,6 +197,10 @@ class __$$SensorDataImplCopyWithImpl<$Res>
         temperature: null == temperature
             ? _value.temperature
             : temperature // ignore: cast_nullable_to_non_nullable
+                  as double,
+        gasResistance: null == gasResistance
+            ? _value.gasResistance
+            : gasResistance // ignore: cast_nullable_to_non_nullable
                   as double,
         voc: null == voc
             ? _value.voc
@@ -215,6 +228,7 @@ class _$SensorDataImpl implements _SensorData {
     required this.b,
     required this.humidity,
     required this.temperature,
+    required this.gasResistance,
     required this.voc,
     required this.chemicalRipening,
     required this.timestamp,
@@ -234,6 +248,8 @@ class _$SensorDataImpl implements _SensorData {
   @override
   final double temperature;
   @override
+  final double gasResistance;
+  @override
   final double voc;
   @override
   final double chemicalRipening;
@@ -242,7 +258,7 @@ class _$SensorDataImpl implements _SensorData {
 
   @override
   String toString() {
-    return 'SensorData(r: $r, g: $g, b: $b, humidity: $humidity, temperature: $temperature, voc: $voc, chemicalRipening: $chemicalRipening, timestamp: $timestamp)';
+    return 'SensorData(r: $r, g: $g, b: $b, humidity: $humidity, temperature: $temperature, gasResistance: $gasResistance, voc: $voc, chemicalRipening: $chemicalRipening, timestamp: $timestamp)';
   }
 
   @override
@@ -257,6 +273,8 @@ class _$SensorDataImpl implements _SensorData {
                 other.humidity == humidity) &&
             (identical(other.temperature, temperature) ||
                 other.temperature == temperature) &&
+            (identical(other.gasResistance, gasResistance) ||
+                other.gasResistance == gasResistance) &&
             (identical(other.voc, voc) || other.voc == voc) &&
             (identical(other.chemicalRipening, chemicalRipening) ||
                 other.chemicalRipening == chemicalRipening) &&
@@ -273,6 +291,7 @@ class _$SensorDataImpl implements _SensorData {
     b,
     humidity,
     temperature,
+    gasResistance,
     voc,
     chemicalRipening,
     timestamp,
@@ -299,6 +318,7 @@ abstract class _SensorData implements SensorData {
     required final int b,
     required final double humidity,
     required final double temperature,
+    required final double gasResistance,
     required final double voc,
     required final double chemicalRipening,
     required final DateTime timestamp,
@@ -317,6 +337,8 @@ abstract class _SensorData implements SensorData {
   double get humidity;
   @override
   double get temperature;
+  @override
+  double get gasResistance;
   @override
   double get voc;
   @override

@@ -9,15 +9,26 @@ ROOT = Path(__file__).resolve().parents[3]
 ML_DIR = ROOT / "ML"
 
 RIPENESS_FEATURES = [
-    "Temperature",
     "Humidity",
-    "Pressure",
-    "Gas resistance in (Kohm)",
+    "GasResistance",
     "Difference",
-    "VOC_percent",
+    "Red",
+    "Green",
+    "Blue",
 ]
 COLOR_FEATURES = ["Red", "Green", "Blue"]
-CHEMICAL_FEATURES = RIPENESS_FEATURES
+CHEMICAL_FEATURES = [
+    "Temperature",
+    "Pressure",
+    "Humidity",
+    "GasResistance",
+    "Difference",
+    "VOC%",
+    "Red",
+    "Green",
+    "Blue",
+    
+]
 
 
 def load_model(name):

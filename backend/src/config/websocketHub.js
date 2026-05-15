@@ -20,10 +20,6 @@ const initWebSocket = (server) => {
     sendJson(client, "connected", {
       message: "Connected to Fruit Pulse live sensor stream.",
     });
-
-    if (latestSensorReading) {
-      sendJson(client, "sensor:reading", latestSensorReading);
-    }
   });
 
   return wss;
@@ -67,9 +63,9 @@ const queueSensorReadings = (readings) => {
   readingQueue.push(...readings);
 
   if (!emissionTimer) {
-    // Emit the first queued reading immediately, then continue at 5-second intervals.
+    // Emit the first queued reading immediately, then continue at 2-second intervals.
     _processReadingQueue();
-    emissionTimer = setInterval(_processReadingQueue, 5000);
+    emissionTimer = setInterval(_processReadingQueue, 2000);
   }
 };
 

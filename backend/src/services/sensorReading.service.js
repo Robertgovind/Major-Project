@@ -18,7 +18,14 @@ const normalizeVocPercent = (value) => {
 
 const normalizeSensorPayload = (body) => {
   const vocPercent = normalizeVocPercent(
-    asNumber(body, "VOC_percent", "vocPercent", "voc", "chemicalRipening"),
+    asNumber(
+      body,
+      "VOC%",
+      "VOC_percent",
+      "vocPercent",
+      "voc",
+      "chemicalRipening",
+    ),
   );
 
   const gasResistance = asNumber(
@@ -49,9 +56,8 @@ const normalizeSensorPayload = (body) => {
   };
 };
 
-const createSensorReading = async (body, predictFromSensorData) => {
+const createSensorReading = (body, prediction) => {
   const sensorData = normalizeSensorPayload(body);
-  const prediction = await predictFromSensorData(sensorData);
 
   return {
     sensorData,

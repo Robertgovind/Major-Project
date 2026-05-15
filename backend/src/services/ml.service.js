@@ -43,7 +43,7 @@ const formatStatus = (ripeness) => String(ripeness || "Unknown").toLowerCase();
 
 const buildRecommendation = ({ ripeness, chemicalUsed }) => {
   const status = formatStatus(ripeness);
-  const isNatural = chemicalUsed !== "YES";
+  const isNatural = String(chemicalUsed).toUpperCase() !== "YES";
   const method = isNatural ? "naturally" : "chemically";
 
   if (status === "unripe") {
@@ -69,13 +69,14 @@ const predictFromSensorData = async (sensorData) => {
     Temperature: sensorData.temperature ?? 0,
     Humidity: sensorData.humidity ?? 0,
     Pressure: sensorData.pressure ?? 0,
-    "Gas resistance in (Kohm)": sensorData.gasResistance ?? 0,
+    GasResistance:
+      sensorData.gasResistance ?? sensorData["Gas resistance in (Kohm)"] ?? 0,
     Difference: sensorData.difference ?? 0,
-    VOC_percent: sensorData.vocPercent ?? 0,
+    "VOC%": sensorData.vocPercent ?? sensorData.VOC_percent ?? 0,
   });
 
   return {
-    isNaturalRipening: result.chemicalUsed !== "YES",
+    isNaturalRipening: String(result.chemicalUsed).toUpperCase() !== "YES",
     status: formatStatus(result.ripeness),
     confidence: result.confidence,
     recommendation: buildRecommendation(result),

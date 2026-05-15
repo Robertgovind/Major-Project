@@ -18,15 +18,53 @@ class VocChartWidget extends StatelessWidget {
     final history = provider.getSensorHistory();
 
     if (history.isEmpty) {
-      return const SizedBox();
+      return AppCard(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.show_chart, color: AppColors.primaryBlue),
+                const SizedBox(width: 8),
+                Text(
+                  'VOC Gas Resistance Trend',
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    color: AppColors.primaryBlue,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            const SizedBox(
+              height: 200,
+              child: Center(child: Text('Waiting for live sensor readings...')),
+            ),
+          ],
+        ),
+      );
     }
 
     final spots = history.asMap().entries.map((entry) {
-      final index = entry.key.toDouble();
+      final seconds = entry.key * 2.0;
       final data = entry.value;
 
-      return FlSpot(index, data.voc);
+      // Use gas resistance for the VOC Gas Resistance trend chart; backend
+      // provides `gasResistance` as the live sensor reading.
+      return FlSpot(seconds, data.gasResistance);
     }).toList();
+    if (spots.length == 1) {
+      spots.add(FlSpot(2, spots.first.y));
+    }
+
+    final yValues = spots.map((spot) => spot.y).toList();
+    final minValue = yValues.reduce((a, b) => a < b ? a : b);
+    final maxValue = yValues.reduce((a, b) => a > b ? a : b);
+    final padding = (maxValue - minValue).abs() < 0.001
+        ? 5.0
+        : (maxValue - minValue) * 0.2;
+    final minY = (minValue - padding).clamp(0.0, double.infinity).toDouble();
+    final maxY = maxValue + padding;
 
     return AppCard(
       child: Column(
@@ -50,6 +88,8 @@ class VocChartWidget extends StatelessWidget {
             height: 200,
             child: LineChart(
               LineChartData(
+                minY: minY,
+                maxY: maxY <= minY ? minY + 10 : maxY,
                 gridData: const FlGridData(show: true),
                 titlesData: FlTitlesData(
                   leftTitles: AxisTitles(
@@ -83,13 +123,13 @@ class VocChartWidget extends StatelessWidget {
                   LineChartBarData(
                     spots: spots,
                     isCurved: true,
-                    color: _getVocColor(history.last.voc),
+                    color: _getVocColor(history.last.gasResistance),
                     barWidth: 3,
-                    dotData: const FlDotData(show: false),
+                    dotData: FlDotData(show: history.length < 2),
                     belowBarData: BarAreaData(
                       show: true,
                       color: _getVocColor(
-                        history.last.voc,
+                        history.last.gasResistance,
                       ).withValues(alpha: 0.1),
                     ),
                   ),
@@ -125,8 +165,9 @@ class VocChartWidget extends StatelessWidget {
   }
 
   Color _getVocColor(double voc) {
-    if (voc > 60) return AppColors.primaryGreen;
-    if (voc > 30) return AppColors.primaryOrange;
+    // Thresholds tuned for gas resistance readings (kohm-ish)
+    if (voc > 45) return AppColors.primaryGreen;
+    if (voc > 35) return AppColors.primaryOrange;
     return AppColors.primaryRed;
   }
 

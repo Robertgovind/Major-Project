@@ -9,7 +9,8 @@ class HistoryTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final history = provider.sensorHistory.reversed.toList();
+    final history = provider.sensorHistory;
+    final predictions = provider.predictionHistory;
 
     return history.isEmpty
         ? Center(
@@ -27,7 +28,11 @@ class HistoryTab extends StatelessWidget {
             itemCount: history.length,
             separatorBuilder: (_, __) => const SizedBox(height: 12),
             itemBuilder: (context, index) {
-              final reading = history[index];
+              final sourceIndex = history.length - 1 - index;
+              final reading = history[sourceIndex];
+              final prediction = sourceIndex < predictions.length
+                  ? predictions[sourceIndex]
+                  : null;
 
               return Card(
                 shape: RoundedRectangleBorder(
@@ -78,12 +83,12 @@ class HistoryTab extends StatelessWidget {
                             '${reading.humidity.toStringAsFixed(1)}%',
                           ),
 
-                          _buildStat('VOC', reading.voc.toStringAsFixed(2)),
-
                           _buildStat(
-                            'Ripening',
-                            '${(reading.chemicalRipening * 100).toStringAsFixed(1)}%',
+                            'Gas',
+                            '${reading.gasResistance.toStringAsFixed(2)} Kohm',
                           ),
+
+                          _buildStat('Status', prediction?.status ?? 'Unknown'),
                         ],
                       ),
                     ],

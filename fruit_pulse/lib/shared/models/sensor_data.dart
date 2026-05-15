@@ -11,6 +11,7 @@ class SensorData with _$SensorData {
     required int b,
     required double humidity,
     required double temperature,
+    required double gasResistance,
     required double voc,
     required double chemicalRipening,
     required DateTime timestamp,

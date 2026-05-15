@@ -13,17 +13,40 @@ const receiveSensorData = asyncHandler(async (req, res) => {
   console.log("Received sensor data:", JSON.stringify(req.body, null, 2));
 
   const payloads = Array.isArray(req.body) ? req.body : [req.body];
-  const normalizedReadings = [];
 
-  for (const item of payloads) {
-    const reading = await createSensorReading(item, predictFromSensorData);
-    const normalizedReading = {
-      ...reading,
-      sensorData: sensorDataSchema.parse(reading.sensorData),
-    };
+  success(
+    res,
+    {
+      count: payloads.length,
+      processing: true,
+    },
+    "Sensor data received. Processing will continue in the background.",
+    202,
+  );
 
-    normalizedReadings.push(normalizedReading);
+  setImmediate(() => {
+    processSensorDataBatch(payloads).catch((error) => {
+      console.error("Failed to process sensor data batch:", error);
+    });
+  });
+});
+
+const processSensorDataBatch = async (payloads) => {
+  if (!payloads.length) {
+    console.warn("Received an empty sensor data batch. Nothing to process.");
+    return;
   }
+
+  const normalizedSensorData = payloads.map((item) =>
+    sensorDataSchema.parse(createSensorReading(item).sensorData),
+  );
+  const latestSensorData = normalizedSensorData[normalizedSensorData.length - 1];
+  const latestPrediction = await predictFromSensorData(latestSensorData);
+
+  const normalizedReadings = normalizedSensorData.map((sensorData) => ({
+    sensorData,
+    prediction: latestPrediction,
+  }));
 
   console.log(
     "Normalized sensor readings:",
@@ -34,26 +57,12 @@ const receiveSensorData = asyncHandler(async (req, res) => {
     ),
   );
   console.log(
-    "Prediction results:",
-    JSON.stringify(
-      normalizedReadings.map((r) => r.prediction),
-      null,
-      2,
-    ),
+    "Prediction result from latest sensor reading:",
+    JSON.stringify(latestPrediction, null, 2),
   );
 
   queueSensorReadings(normalizedReadings);
-
-  success(
-    res,
-    {
-      count: normalizedReadings.length,
-      readings: normalizedReadings,
-    },
-    "Sensor readings queued for broadcast.",
-    201,
-  );
-});
+};
 
 const getLatest = asyncHandler(async (req, res) => {
   const latest = getLatestSensorReading();
