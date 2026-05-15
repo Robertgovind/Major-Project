@@ -169,19 +169,19 @@ void sendToServer(
 
     String json = "{";
 
-    json += "\"Red\":" + String(R) + ",";
-    json += "\"Green\":" + String(G) + ",";
-    json += "\"Blue\":" + String(B) + ",";
+    json += "\"r\":" + String(R) + ",";
+    json += "\"g\":" + String(G) + ",";
+    json += "\"b\":" + String(B) + ",";
 
-    json += "\"Temperature\":" + String(temperature, 2) + ",";
-    json += "\"Humidity\":" + String(humidity, 2) + ",";
-    json += "\"Pressure\":" + String(pressure, 2) + ",";
+    json += "\"temperature\":" + String(temperature, 2) + ",";
+    json += "\"humidity\":" + String(humidity, 2) + ",";
+    json += "\"pressure\":" + String(pressure, 2) + ",";
 
-    json += "\"Gas resistance in (Kohm)\":" + String(gas, 2) + ",";
+    json += "\"gasResistance\":" + String(gas, 2) + ",";
 
-    json += "\"Difference\":" + String(gasDifference, 2) + ",";
+    json += "\"difference\":" + String(gasDifference, 2) + ",";
 
-    json += "\"VOC_percent\":" + String(vocPercent, 2);
+    json += "\"vocPercent\":" + String(vocPercent, 2);
 
     json += "}";
 
