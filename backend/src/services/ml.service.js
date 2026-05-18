@@ -47,7 +47,9 @@ const buildRecommendation = ({ ripeness, chemicalUsed }) => {
   const method = isNatural ? "naturally" : "chemically";
 
   if (status === "unripe") {
-    return `Fruit is currently unripe. Wait for ripening.`;
+    return method === "chemically"
+      ? `Fruit is currently unripe and chemical is used. Consider disposing it.`
+      : `Fruit is currently unripe. Wait for ripening.`;
   }
 
   if (status === "ripe") {
