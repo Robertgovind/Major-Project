@@ -65,6 +65,9 @@ class VocChartWidget extends StatelessWidget {
         : (maxValue - minValue) * 0.2;
     final minY = (minValue - padding).clamp(0.0, double.infinity).toDouble();
     final maxY = maxValue + padding;
+    final bottomInterval = spots.last.x <= 8
+        ? 2.0
+        : (spots.last.x / 4).ceilToDouble();
 
     return AppCard(
       child: Column(
@@ -91,6 +94,25 @@ class VocChartWidget extends StatelessWidget {
                 minY: minY,
                 maxY: maxY <= minY ? minY + 10 : maxY,
                 gridData: const FlGridData(show: true),
+                lineTouchData: LineTouchData(
+                  touchTooltipData: LineTouchTooltipData(
+                    getTooltipItems: (touchedSpots) {
+                      return touchedSpots.map((spot) {
+                        if (spot.barIndex != 0) return null;
+
+                        return LineTooltipItem(
+                          'Time: ${spot.x.toInt()}s\n'
+                          'VOC: ${spot.y.toStringAsFixed(2)} Kohm',
+                          const TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        );
+                      }).toList();
+                    },
+                  ),
+                ),
                 titlesData: FlTitlesData(
                   leftTitles: AxisTitles(
                     sideTitles: SideTitles(
@@ -105,6 +127,8 @@ class VocChartWidget extends StatelessWidget {
                   bottomTitles: AxisTitles(
                     sideTitles: SideTitles(
                       showTitles: true,
+                      reservedSize: 28,
+                      interval: bottomInterval,
                       getTitlesWidget: (value, meta) => Text(
                         '${value.toInt()}s',
                         style: const TextStyle(fontSize: 12),
@@ -135,7 +159,7 @@ class VocChartWidget extends StatelessWidget {
                   ),
                   // Standard reference line
                   LineChartBarData(
-                    spots: spots.map((spot) => FlSpot(spot.x, 45)).toList(),
+                    spots: spots.map((spot) => FlSpot(spot.x, spot.y)).toList(),
                     isCurved: false,
                     color: Colors.grey,
                     barWidth: 1,
@@ -147,16 +171,16 @@ class VocChartWidget extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 8),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              _buildLegendItem('Unripe', AppColors.primaryGreen),
-              const SizedBox(width: 16),
-              _buildLegendItem('Ripe', AppColors.primaryOrange),
-              const SizedBox(width: 16),
-              _buildLegendItem('Overripe', AppColors.primaryRed),
-            ],
-          ),
+          // Row(
+          //   mainAxisAlignment: MainAxisAlignment.center,
+          //   children: [
+          //     _buildLegendItem('Unripe', AppColors.primaryGreen),
+          //     const SizedBox(width: 16),
+          //     _buildLegendItem('Ripe', AppColors.primaryOrange),
+          //     const SizedBox(width: 16),
+          //     _buildLegendItem('Overripe', AppColors.primaryRed),
+          //   ],
+          // ),
         ],
       ),
     );

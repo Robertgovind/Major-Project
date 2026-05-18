@@ -19,8 +19,8 @@ const sensorDataSchema = z.object({
   pressure: numericString(z.number().min(0)).optional(),
   gasResistance: numericString(z.number().min(0)).optional(),
   difference: numericString(z.number()).optional(),
-  vocPercent: numericString(z.number().min(0).max(1)).optional(),
-  voc: numericString(z.number().min(0).max(100000)),
+  vocPercent: numericString(z.number().min(-1).max(1)).optional(),
+  voc: numericString(z.number().min(-100000).max(100000)),
   chemicalRipening: numericString(z.number().min(0).max(1)),
   timestamp: z.coerce.date().optional().default(() => new Date()),
 }).passthrough();

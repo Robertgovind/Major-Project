@@ -1,12 +1,33 @@
 import json
+import os
 import sys
 from pathlib import Path
 import joblib
 import pandas as pd
 
 
+SCRIPT_DIR = Path(__file__).resolve().parent
 ROOT = Path(__file__).resolve().parents[3]
-ML_DIR = ROOT / "ML"
+
+
+def resolve_ml_dir():
+    configured_dir = os.environ.get("ML_MODEL_DIR")
+    if configured_dir:
+        return Path(configured_dir).expanduser().resolve()
+
+    candidates = [
+        SCRIPT_DIR / "ML",
+        ROOT / "ML",
+    ]
+
+    for candidate in candidates:
+        if candidate.exists():
+            return candidate
+
+    return candidates[0]
+
+
+ML_DIR = resolve_ml_dir()
 
 RIPENESS_FEATURES = [
     "Humidity",

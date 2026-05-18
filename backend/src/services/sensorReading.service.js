@@ -13,7 +13,7 @@ const asNumber = (body, ...keys) => {
 
 const normalizeVocPercent = (value) => {
   if (!Number.isFinite(value)) return 0;
-  return clamp(value, 0, 1);
+  return clamp(value, -1, 1);
 };
 
 const normalizeSensorPayload = (body) => {
@@ -51,7 +51,7 @@ const normalizeSensorPayload = (body) => {
     difference: difference ?? 0,
     vocPercent,
     voc: Number((vocPercent * 100).toFixed(2)),
-    chemicalRipening: vocPercent,
+    chemicalRipening: clamp(vocPercent, 0, 1),
     timestamp: body.timestamp || new Date(),
   };
 };
